@@ -1,0 +1,723 @@
+%\documentclass[11pt]{cctbook}
+\documentclass[10pt, a4paper, fleqn, CJK]{cctart}
+
+% Uss additional packages
+\usepackage{CCT}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{picins}
+\usepackage{picinpar}
+\usepackage{pstricks}
+\usepackage{epsfig}
+\usepackage{float}
+\usepackage{subfig}
+\usepackage[numbers]{natbib}
+%\usepackage{parskip}
+%\usepackage[CJKbookmarks,hyperindex,colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}
+%\usepackage[dvipdfm,CJKbookmarks,colorlinks=true,linkcolor=blue,citecolor=blue]{hyperref}
+\usepackage[top = 1.54cm, bottom = 1.54cm, left = 1.54cm, right = 1.54cm, includehead, includefoot]{geometry}
+%\usepackage[body={18cm, 24cm}, centering, dvipdfm]{geometry}
+%\usepackage[top = 1in, bottom = 1in, left = 1in, right = 1in]{geometry}
+
+% The amssymb package provides various useful mathematical symbols
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+
+%-------------------------------------------------------------------------------------------
+% some conventional setting
+%-------------------------------------------------------------------------------------------
+
+\graphicspath{{Image/}}
+\makeatletter
+\newenvironment{tablehere}{\def\@captype{table}}{}
+\newenvironment{figurehere}{\def\@captype{figure}}{}
+\makeatother
+
+\makeatletter
+\newcommand\figcaption{\def\@captype{figure}\caption}
+\newcommand\tabcaption{\def\@captype{table}\caption}
+\makeatother
+
+\setlength{\parindent}{2\ccwd}              %段落首行缩进量 \ccwd表示一个汉定的宽度
+\setlength{\parskip}{3pt plus1pt minus2pt}      %段落之间的竖直距离
+\setlength{\baselineskip}{12pt plus2pt minus1pt}    %段落内的行距
+%\setlength{\textheight}{21true cm}          %每页上的文本总高度
+%\setlength{\textwidth}{14.5true cm}         %每页上的文本总宽度
+
+\newtheorem{theorem}{{\heiti 定理}}[section]
+\newtheorem{definition}[theorem]{{\heiti 定义}}
+\newtheorem{lemma}[theorem]{{\heiti 引理}}
+\newtheorem{proposition}[theorem]{{\heiti 命题}}
+\newtheorem{corollary}[theorem]{{\heiti 推论}}
+
+\newcommand \sfrac[2] {{\scriptstyle \frac{#1}{#2}}}
+\newcommand{\mb}{\hspace*{\fill} \rule{1.5mm}{1.5mm}}
+
+%利用下述命令来定义用户自己的宏
+%\newcommand \ {}
+%下述宏改变公式编号的格式。如果所用类为book(cctbook)，可以用第二句替换。
+%\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+%\renewcommand{\theequation}{\arabic{chapter}.\arabic{section}.\arabic{equation}}
+
+%下面这组命令可以使公式编号随着每开始新节而重新开始。
+%\makeatletter      % '@' is now a normal "letter" for TeX
+%\@addtoreset{equation}{section}
+%\makeatother       % '@' is restored as a "non-letter" character for TeX
+\title
+{
+    \bf 基于$L_0$优化的三角网格模型的尖锐特征线提取算法
+    \thanks{{\bf E-mail}:yangxk@mail.ustc.edu.cn  \quad {\bf Telephone}:
+    18715174297
+}}
+
+\author{\em
+    }
+\date{\today}
+
+\begin{document}
+\maketitle
+%-----------------------------------------------------------------------------------------------------------------
+% 摘要部分
+
+
+%-----------------------------------------------------------------------------------------------------------------
+% 正文部分
+%-----------------------------------------------------------------------------------------------------------------
+
+%-----------------------------------------------------------------------------------------------------------------
+% 正文部分：在T网格上的$G^1$连续性Skinning曲面
+%-----------------------------------------------------------------------------------------------------------------
+\section{摘要}
+特征线是描述物体形状的基本方式，其已被广泛应用于计算机图形学、计算机辅助设计、图像处理以及非真实感渲染等领域。本文针对三角网格模型提出了一种基于$L_0$ 优化和分片常数空间的尖锐特征线提取算法。该算法首先通过求解$L_0$优化模型极大化网格模型的平整区域，同时保留了网格的尖锐特征。然后，计算网格中所有相邻面片的法向差异，并将差异值大于用户指定的某个阈值的相邻面片的公共边设为特征边，所有的这些特征边构成了网格模型的特征线。为了改善$L_0$优化模型的求解结果，我们提出了一个迭代求解策略。最后，我们测试了大量的实例网格模型并与现有的算法做了详细的比较。实验结果表明本文的算法非常鲁棒并且能够得到高质量的尖锐特征线提取结果。
+
+关键词: 尖锐特征线; 三角网格模型; $L_0$优化; 分片常数空间
+
+{\bf Extracting Sharp Feature Lines Using $L_0$ Optimization On Triangular Meshes }
+
+{\bf Abstract}: Feature lines are fundamental shape descriptors and have been extensively applied in computer graphics, computer-aided design, image processing, non-photorealistic rendering and other fields. In this paper, we present an algorithm based on $L_0$ optimization and piecewise constant function space for extracting sharp feature lines on triangular meshes. Firstly, we maximize the flat regions of the triangular mesh model while preserving sharp features by solving a $L_0$ optimization model. Then, by calculating the normal differences of all adjacent patches in the mesh, we can detect every feature edge which belongs to two faces whose normal difference is larger than a user-specified threshold. All these feature edges form the sharp feature lines of the mesh model. In addition, we propose a strategy for solving the $L_0$ optimization problem to improve our results. Finally, we test a large number of mesh models and make a detailed comparison with several sate-of-the-arts. The experiments demonstrate that our algorithm is robust and can produce results with high visual quality.
+
+{\bf Key words}: sharp feature lines; triangular mesh model; $L_0$ optimization; constant function space
+
+\section{引言}
+三角网格曲面模型被广泛应用于计算机图形学。相对于参数和隐式曲面模型，网格模型有其自身的优点。首先，网格模型容易得到且方便计算；其次，它可以近似任意拓扑和几何的曲面；最后，网格模型在不同的硬件上都很容易渲染。在计算机图形学、计算机辅助几何设计和图像处理中，特征是描述对象的一个重要度量属性。数学上特征没有明确的几何定义，对于不同的应用问题同一个物体可能会有不同的特征。特征提取是处理很多高级任务的重要步骤，特征保留程度又是判断很多算法优劣的关键指标。因此在三角网格模型上提取特征线是一项重要而基础的工作。
+
+特征线可以分为脊线谷线、轮廓线和其余特征线。数学上，脊线谷线被定义为曲面上主曲率沿着它们相应的主方向的极值点组成的线。它们最早被瑞典医学家古尔斯特兰德研究。在上世纪，脊线谷线在经典微分几何和奇点理论[1]、医学图像分析[2]、人脸识别[3]和自由曲面质量控制[4]等领域中被广泛研究。在过去的十多年，在多边形网格上提取脊线谷线又有很多工作。Belyaev等[5]基于线性插值和非最大抑制技术提出了一种在深度图像和三角网格上提取脊线谷线的方法。为了获得稳定的结果，他们运用了耦合非线性扩散过程去光滑顶点的位置和法向。Hildebrandt等[6]提供了一条提取特征线的有效路径。他们使用了离散微分几何和高阶曲面导数的平滑滤波器。另外一条线路，Ohtake等[7]利用隐式曲面拟合给定的多边形网格。网格上的顶点的曲率张量和曲率导数用其在隐式曲面上相应点的量去估计，进而提取出脊线谷线。在文章[8]中，他们为了逼近散乱点集提出了SLIM的稀疏表示。SLIM可以简单有效的估计高阶曲面导数信息，这对他们的特征提取技术起到了至关重要的作用。Kim等[9]和Yoshizawa等[10]分别利用改良的MLS方法和局部三次多项式逼近技术加速主曲率和它们的导数的计算。接着，Yoshizawa等[11,12]为了避免曲面拟合这一过程提出了一种快速且可靠的基于几何的有限差分方法。轮廓线因其视点依赖的独特性，在非真实感领域已经被研究过很多年[13,14]。Markosian 等[15] 提出了一种可以找到大多数可见轮廓边缘的随机算法。他们的算法是基于只有一小部分网格的边缘是可见的轮廓边缘这一观察。Hertzmann 等[16]提出了一种在曲面上计算剪影的方法，他们定义剪影曲线上的点的法向和视图方向是正交的。为了间接的表示图形，DeCarlo等[17]介绍了在视点附近时像剪影曲线的暗示轮廓线。他们通过寻找径向曲率的零点来计算暗示轮廓线。在文章[18]中，他们又发展了两种新的线：暗示突出线和主要突出线。除了这两类在数学上有相对明确定义的特征线，还有很多其他特征线。刘胜兰等[18]使用“基于边”的方法提取网格模型上的特征线，根据相邻三角片的法向夹角及各点主曲率是否为极值分两次提取特征点，再将特征点分组连接成Ｂ样条曲线。缪永伟等[19]针对三角网格模型提出一种基于特征点评估的环形特征线快速提取方法。Tong等[20]基于Mumford-Shah模型提出了一种在三角网格上提取特征线的变分方法。他们的框架通过不同的输入可以提取出类似轮廓线和脊线谷线的结果。上述所有方法直接或间接依赖网格曲面上曲率或其他高阶导数的信息，因此受噪音的影响明显。
+
+近年，随着计算机领域的快速发展，稀疏优化在图形图像去噪领域应用十分广泛。我们知道$L_0$范数所能达到的稀疏性要高于$L_1$范数，但是由于$L_0$优化问题是一个组合优化问题，是NP难问题，所以往往用$L_1$范数去近似$L_0$范数[21]。Xu等[22]在图像去噪工作中提出了一种近似求解$L_0$优化模型的方法。他们先引进松弛变量，接着将原问题转化为带约束问题，然后用罚函数方法将带约束问题转化为无约束问题，继而将上述问题分解为两个子问题，通过交替方向法去迭代求解得到分片常数的光滑图像。Lei等[23]将$L_0$范数运用到三角网格的去噪工作中。他们定义了度量三角面之间平整程度的边算子，然后应用[22]的求解方法去求解模型达到去噪目的。Zhang等[24]在三角网格上定义了分片常数空间及相应算子，使用TV($L_1$范数)方法结合边上的跳跃度量对网格进行去噪。
+
+本文为了避免噪音对网格上提取特征线的影响，提出基于$L_0$优化的三角网格特征线提取算法。首先优化三角网格上的法向，这也是全文的核心步骤；然后，求解网格中所有相邻面片的法向差异，并将差异值大于用户指定的某个阈值的相邻面片的公共边设为特征边，所有的这些特征边构成了网格模型的特征线。为了优化法向，我们对法向构建了一个带约束的优化模型。我们把上述优化模型转化成类似[22]中的问题的形式，然后结合[22]和[24] 的求解技术去求解转化后的问题。为了提高结果质量，我们提出了自己迭代求解优化模型策略。我们提取的尖锐特征线有效的描述了图形，给人一种直观的视觉感受。同时它也可以被运用到曲面重建、网格去噪和图像无真实感绘制领域。
+
+\section{提取尖锐特征的$L_0$优化模型}
+\subsection{记号}
+设$M\subset R^3$是非退化的任意拓扑结构的紧三角网格。分别用$\{v_i:i=0,1,\cdots,V-1\}$，$\{e_i:i=0,1,\cdots,E-1\}$和$\{\tau_i:i=0,1,\cdots,T-1\}$ 代表$M$的顶点，边和面的集合。这里$V$,$E$和$T$分别是$M$的顶点，边和面的数量。$v\prec e$表示$v$是边$e$的一个端点，$e\prec\tau$表示$e$是三角面$\tau$的一条边，$v\prec\tau$表示$v$是三角面$\tau$的一个顶点。接着介绍边$e$和三角面$\tau$的方向一致性，用$sgn(e,\tau)$ 表示。首先假设所有三角面的方向都是逆时针方向，所有边都有一个随机给定的固定方向。那么对于$e\prec\tau$，若$e$的方向和$\tau$ 的方向是一致的，那么$sgn(e,\tau)=1$；否则，$sgn(e,\tau)=-1$。
+
+接着定义和$M$上的分片常数函数空间同构的空间$V_M=R^T$,例如$u=(u_0,u_1,\cdots,u_{T-1})\in V_M$，$u_\tau$代表$u$在三角面$\tau$上的值。本文中要用到的空间为$V_M^3=R^T\times R^T\times R^T$。用$I_{3\times T}\in V_M^3$代表$M$上的单位法向量，其中$(I_\tau)_{3\times 1}$代表三角面$\tau$上的单位法向量；$S_{3\times T}\in V_M^3$代表计算得到的$M$ 上的法向量，$(S_\tau)_{3\times 1}$ 代表计算得到的三角面$\tau$上的法向量。
+
+边$e$上的跳跃$[S]_e$如下计算：
+$$
+[S]_e=\left\{
+\begin{aligned}
+&\sum_{e\prec\tau}S_\tau sgn(e,\tau),& e\nsubseteq\partial M\\
+&(0,0,0)^T,&    otherwise
+\end{aligned}
+\right.\eqno{(1)}
+$$
+
+对于边$e$上的跳跃，定义一个$L_0$度量：
+$$
+||[S]_e||_0=\left\{
+\begin{aligned}
+&0,& ||[S]_e||_2=0\\
+&1,& otherwise
+\end{aligned}
+\right.\eqno{(2)}
+$$
+
+\subsection{$L_0$优化模型}
+前面提到对于带噪音的三角网格模型，现有的方法都无法得到较理想的结果。而稀疏优化天然具有抗噪特点，故我们提出基于$L_0$优化的特征线提取算法。我们的算法是优化网格上的法向，为了得到能够提取网格模型$M$的尖锐特征的法向$S$，我们建立如下$L_0$模型:
+$$\min\limits_{S\in C_N}\sum_{e}||[S]_e||_0\quad s.t.\quad\sum_{\tau}||S_\tau-I_\tau||_2\leqslant\epsilon\eqno{(3)}$$
+其中$\epsilon$是一个正的常数，$C_N=\{N\in V_M^3:||N_\tau||_2=1,\forall\tau\}$。
+目标函数是跳跃度量为1的边的条数，约束条件为:1)$S$的每个分量都是单位长度;2)$S$与$I$之间允许存在大小为$\epsilon$的差异。
+
+上述模型等价于以下无约束模型：
+$$\min\limits_{S\in V_M^3}\{\sum_\tau ||S_\tau-I_\tau||_2^2+\lambda\sum_e ||[S]_e||_0+\chi(S)\},\eqno{(4)}$$
+其中$$
+\chi(S)=\left\{
+\begin{aligned}
+&0,& S\in C_N\\
+&+\infty,& otherwise
+\end{aligned}
+\right.\eqno{(5)}
+$$
+式(4)中$\lambda$的作用就相当于式(3)中的$\epsilon$，$\epsilon=0$意味着$S=I$，等同于$\lambda=0$；$\epsilon$取无穷大意味着$S$上的每个分量可以取任意一个单位长度的向量，等同于$\lambda$取无穷大。式(4)中的$\chi(S)$为了保证$S\in C_N$。
+\subsection{求解}
+我们知道$L_0$优化问题是一个组合优化问题，是NP难问题，不易求解。将(3)式转化为(4)式没有从本质上改变问题的求解难度，但是类似(4)式的问题在文献[22]中被研究过，我们借助他们的方法对(4)式做一个近似求解。
+
+首先引进松弛变量$h$，其中$h_e$对应$[S]_e$，把(4)式改写成如下形式：
+$$\min\limits_{S,h}\{\sum_\tau ||S_\tau-I_\tau||_2^2+\lambda\sum_e||h_e||_0+\beta\sum_e||[S]_e-h_e||_2^2+\chi(S)\},\eqno{(6)}$$
+其中$\beta$是控制$h$和相应跳跃的相似程度的自适应参数，当$\beta$足够大的时候(6)式逼近(4)式。(6)式可以分解为两个子问题，通过交替方向法求解。每次求解，固定一个变量，求解另一个变量，通过增加$\beta$来达到收敛。
+
+{\bf $S$-子问题}：已知$h$，求解$S$，即：$$\min\limits_{S}\{\sum_\tau ||S_\tau-I_\tau||_2^2+\beta\sum_e||[S]_e-h_e||_2^2+\chi(S)\},\eqno{(7)}$$
+先忽略$\chi(S)$这一项，那么(7)式分别是$x$,$y$,$z$维度的凸二次稀疏优化问题，待求解出$S$，再单位化$S$的每个分量[24]。
+
+$x$维度的凸二次稀疏优化问题：设
+$$f=\sum_\tau (S^x_\tau-I^x_\tau)^2+\beta\sum_e(h^x_e-[S]_e^x)^2,\eqno{(8)}$$将其中含有$S^x_{\tau_i}$的项提出来形成$g$,那么
+$$g=(S^x_{\tau_i}-I^x_{\tau_i})^2+\beta\sum_{e\in\tau_i}(h^x_e-[S]_e^x)^2,\eqno{(9)}$$ $\frac{\partial g}{\partial S_{\tau_i}^x}=0,(i=0,1,\cdots,T-1)$ 是$f$取到最小值的
+的充要条件，其中$$\frac{\partial g}{\partial S^x_{\tau_i}}=2(S^x_{\tau_i}-I^x_{\tau_i})-2\beta\sum_{e\in\tau_i}sgn(e,\tau_i)(h^x_e-\partial_eS^x)=0,\eqno{(10)}$$ $f$ 对所有三角面上的值求偏导等于0即可得到线性方程组$AS^x=b$，这里我们使用MATLAB的双共轭梯度稳定法(l)迭代求解上述稀疏线性方程组。同理可以求得$S^y，S^z$，然后单位化求得的所有三角面上的法向得到$S$。
+
+{\bf $h$-子问题}：已知$S$，求解$h$，即：$$\min\limits_{h}\{\lambda\sum_e||h_e||_0+\beta\sum_e||[S]_e-h_e||_2^2\},\eqno{(11)}$$
+这个$h$-子问题可以拆分成每个边上的问题，边$e$上的问题：$$\min\limits_{h_e}\{\lambda||h_e||_0+\beta||[S]_e-h_e||_2^2\},\eqno{(12)}$$
+设$f_1=\lambda||h_e||_0+\beta||[S]_e-h_e||_2^2$。那么当$h_e=(0,0,0)^T$时,$f_1\equiv\beta||[S]_e||_2^2$;$h_e\neq (0,0,0)^T$时,$h_e=[S]_e$,$f_1$才能取到最小值$\lambda$。所以显式解如下：
+$$
+h_e=\left\{
+\begin{aligned}
+&(0,0,0)^T& ||[S]_e||_2^2\leqslant\frac{\lambda}{\beta}\\
+&[S]_e,& otherwise
+\end{aligned}
+\right.\eqno{(13)}
+$$
+
+
+%{\bf 尖锐特征的提取：}这里我们是假设尖锐特征$\Gamma$是由三角网格的一些边组成的集合，理想情况下$\Gamma=\{e:||[S]_e||_0=1\}$。但是上述算法求出来的只是近似解，所以我们需要设置一个阈值$\varepsilon>0$，那么$\Gamma=\{e:||[S]_e||_2>\varepsilon\}$.
+%图1展示了我们的策略对特征线提取结果的影响。图1中的b)和c)是没有采用我们的迭代策略的结果;d)和e)采用了我们的迭代策略。仅仅提高$\lambda$无法得到较好的结果的根本的原因是上述方法无法精确求解$L_0$问题。
+
+算法1流程如下：
+
+输入：带有初始法向的三角网格
+
+输出：修改法向后的三角网格
+
+Step1：输入三角网格初始法向$I$，权重$\lambda$，参数$\beta_0,\beta_{max}$和增长因子$\kappa$.
+
+Step2：令$S^{(0)}$=$I$，$\beta=\beta_0$，$i=0$.
+
+Step3：迭代求解.
+
+$\quad$Step3.1：固定$S^{(i)}$，求解(11)式求得$h^{(i)}$.
+
+$\quad$Step3.2：固定$h^{(i)}$，求解(7)式得到$S^{(i+1)}$.
+
+$\quad$Step3.3：$\beta=\kappa\beta$，$i=i+1$.
+
+$\quad$Step3.4：若$\beta>\beta_{max}$，那么$S=S^{(i)}$，停止迭代；否则，重复Step3.
+
+Step4：输出以$S$为法向的三角网格.
+
+由于上述只是求解$L_0$问题的一个近似方法，总是不完美的。当求解的结果的稀疏度不够大时，我们试图增加$\lambda$来提升结果的稀疏度，但是不能得到理想的结果；这里提高$\lambda$相当于增加了(3)中的$\epsilon$，扩大了可行解集合，使问题的求解变得更加困难。故此我们提出了一种增加结果稀疏度且能得到理想结果的贪婪策略：用算法1得到$S^{(1)}$，然后更新$I$，即$I=S^{(1)}$，再调用算法1得到$S^{(2)}$。在4.2节，我们会展示此策略对特征线提取结果质量提升的显著性。下面给出一个简短的增加稀疏度的解释：
+
+设$$E(S)=\sum_\tau ||S_\tau-S_\tau^{(1)}||_2^2+\lambda\sum_{e} ||[S]_e||_0+\chi(S),\eqno{(14)}$$
+那么$E(S^{(2)})\leq E(S^{(1)})$,这是由算法1保证的。即
+$$\sum_\tau ||S_\tau^{(2)}-S_\tau^{(1)}||_2^2+\lambda\sum_e ||[S^{(2)}]_e||_0\leqslant\sum_\tau ||S_\tau^{(1)}-S_\tau^{(1)}||_2^2+\lambda\sum_e ||[S^{(1)}]_e||_0\eqno{(15)}$$
+易得$\sum_{e} ||[S^{(2)}]_e||_0\leqslant\sum_{e} ||[S^{(1)}]_e||_0{\quad\blacksquare}$
+
+算法2流程如下：
+
+输入：带有初始法向的三角网格
+
+输出：修改法向后的三角网格
+
+Step1：输入迭代次数$K$,令$i=1$.
+
+Step2：迭代求解
+
+$\quad$Step2.1：调用算法1得到$S^{(i)}$.
+
+$\quad$Step2.2：$I=S^{(i)}$，$i=i+1$.
+
+$\quad$Step2.3：若$i>K$，$S=S^{(K)}$，停止迭代；否则，重复Step2.
+
+Step3：输出以$S$为法向的三角网格.
+
+{\bf 尖锐特征的提取：}这里我们设尖锐特征线$\Gamma$是由三角网格的特征边组成的集合，理想情况下$\Gamma=\{e:||[S]_e||_0=1\}$。但是上述算法求出来的只是近似解，所以需要用户设置一个阈值$\varepsilon>0$，那么$\Gamma=\{e:||[S]_e||_2>\varepsilon\}$。经过试验我们发现大多数情况下$\varepsilon=0.2$可以很好的工作，若想增加结果的特征线数量可以适当的降低$\varepsilon$，反之增加。
+
+\section{结果与分析}
+%算法1和算法2中有很多参数,其中一些参数对本文中所有结果都是固定的,它们是:尖锐特征提取的参数$\varepsilon=0.2$,初始罚因子$\beta_0=0.1$,罚因子增长系数$\kappa=1.4$。其他参数是根据模型不同而设定的,控制特征数量的$\lambda$除非另外说明,默认是0.1,罚因子上限$\beta_{max}=10000\lambda$.迭代次数$K$由模型简单或者复杂区分。如图2中的简单模型迭代次数$K=1$; %如图3,4中的复杂模型迭代次数$K=5$.
+在本章节，针对不同的实例模型展示了算法求解的结果以及与其他算法结果的比较，同时详细的说明每个模型的参数以及计算时间。
+\subsection{案例讨论}
+图1展示了我们的策略对特征线提取结果的影响。图1中的b)和c)是没有采用我们的迭代策略的结果;d)和e)是使用了我们的迭代策略的结果。通过b)和d)以及c)和e)的对比，我们可以清晰的看到采用我们的策略可以大幅度提升结果的质量，而仅提高$\lambda$无法得到好的结果。只是调整$\lambda$无法得到理想结果的原因是上述方法只是$L_0$问题的一个近似解法。虽然$\lambda$的增加对提高结果的效果不显著，但是它还是有增加稀疏性的作用，如图1中b)和c)的对比以及d)和e)的对比，明显特征线的数量是减少的；
+\begin{figure*}[!htpb]
+    \centering
+    \subfloat[]{
+        \label{fig:graphic1:a}
+        \includegraphics[width=0.20\textwidth]{sculpture.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:b}
+        \includegraphics[width=0.20\textwidth]{sculpture1.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:c}
+        \includegraphics[width=0.20\textwidth]{sculpture2.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:d}
+        \includegraphics[width=0.20\textwidth]{sculpture3.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:e}
+        \includegraphics[width=0.20\textwidth]{sculpture4.png}
+    }
+    \caption[mesh]
+    {
+    \subref{fig:graphic1:a} 输入的sculpture
+    \subref{fig:graphic1:b} $\lambda=0.1,K=1$
+    \subref{fig:graphic1:c} $\lambda=0.2,K=1$
+    \subref{fig:graphic1:d} $\lambda=0.1,K=10$
+    \subref{fig:graphic1:e} $\lambda=0.2,K=10$
+    }
+    \label{fig:graphic1}
+\end{figure*}
+
+\begin{figure*}[!htpb]
+    \centering
+    \subfloat[]{
+       \begin{tikzpicture}
+       \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.2\textwidth]{tile0.png}};
+       \begin{scope}[x={(image.south east)},y={(image.north west)}]
+       \draw[red] (0.285,0.397) rectangle (0.38,0.482);
+       \end{scope}
+\end{tikzpicture}
+    }
+    \subfloat[]{
+       \begin{tikzpicture}
+       \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.2\textwidth]{tile11.png}};
+       \begin{scope}[x={(image.south east)},y={(image.north west)}]
+       \draw[red] (0.285,0.397) rectangle (0.38,0.482);
+       \end{scope}
+\end{tikzpicture}
+    }
+    \subfloat[]{
+       \begin{tikzpicture}
+       \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.2\textwidth]{tile1.png}};
+       \begin{scope}[x={(image.south east)},y={(image.north west)}]
+       \draw[red] (0.285,0.397) rectangle (0.38,0.482);
+       \end{scope}
+\end{tikzpicture}
+    }
+    \subfloat[]{
+       \begin{tikzpicture}
+       \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.2\textwidth]{tile22.png}};
+       \begin{scope}[x={(image.south east)},y={(image.north west)}]
+       \draw[red] (0.285,0.397) rectangle (0.38,0.482);
+       \end{scope}
+\end{tikzpicture}
+    }
+    \subfloat[]{
+       \begin{tikzpicture}
+       \node[anchor=south west,inner sep=0] (image) at (0,0) {\includegraphics[width=0.2\textwidth]{tile2.png}};
+       \begin{scope}[x={(image.south east)},y={(image.north west)}]
+       \draw[red] (0.285,0.397) rectangle (0.38,0.482);
+       \end{scope}
+\end{tikzpicture}
+    }\\[0pt]
+    \subfloat[]{
+        \label{fig:graphic1:a}
+        \includegraphics[width=0.2\textwidth]{tile00.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:b}
+        \includegraphics[width=0.2\textwidth]{tile020.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:c}
+        \includegraphics[width=0.2\textwidth]{tile120.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:d}
+        \includegraphics[width=0.2\textwidth]{tile065.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:e}
+        \includegraphics[width=0.2\textwidth]{tile165.png}
+    }
+    \caption[mesh]
+    {
+    \subref{fig:graphic1:a} 原始tile模型
+    \subref{fig:graphic1:b} 法向未优化提取($\varepsilon=0.2$)
+    \subref{fig:graphic1:c} 法向优化后提取($\varepsilon=0.2$)
+    \subref{fig:graphic1:d} 法向未优化提取($\varepsilon=0.65$)
+    \subref{fig:graphic1:e} 法向优化后提取($\varepsilon=0.65$)
+    }
+    \label{fig:graphic1}
+\end{figure*}
+图2展示的是tile模型未经处理直接提取特征线和经过我们的法向优化再提取特征线的一个结果比较.由于我们的法向处理会抹掉小噪音，所以提取出来的特征线会更干净，如图2.b)和c)的比较；经过法向处理后的尖锐特征会被进一步放大，当阈值上升时，被保留的尖锐特征会优于在原模型上直接提取特征线，如图2.d)和e)的比较。
+
+我们也和一些提取特征线的工作进行了比较。它们分别是rtsc-1.5[17],Crest-lines[10],变分方法[20]文章中的算法.这些文章中也有很多控制特征线结果的参数，我们在他们的默认参数基础上进行了一定的调优。
+\begin{figure*}[!htpb]
+    \centering
+    \subfloat[]{
+        \label{fig:graphic1:a}
+        \includegraphics[width=0.20\textwidth]{sphere.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:b}
+        \includegraphics[width=0.20\textwidth]{sphereRtsc.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:c}
+        \includegraphics[width=0.20\textwidth]{sphereCrest.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:d}
+        \includegraphics[width=0.20\textwidth]{sphereVariation.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:e}
+        \includegraphics[width=0.20\textwidth]{sphereOur.png}
+    }\\[0pt]
+    \subfloat[]{
+        \label{fig:graphic1:f}
+        \includegraphics[width=0.20\textwidth]{fandisk.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:g}
+        \includegraphics[width=0.20\textwidth]{fandiskRtsc.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:h}
+        \includegraphics[width=0.20\textwidth]{fandiskCrest.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:i}
+        \includegraphics[width=0.20\textwidth]{fandiskVariation.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:j}
+        \includegraphics[width=0.20\textwidth]{fandiskOur.png}
+    }
+    \caption[mesh]
+    {
+    \subref{fig:graphic1:a} 带有噪音的十二面体
+    \subref{fig:graphic1:b} rtsc-1.5
+    \subref{fig:graphic1:c} Crest-lines
+    \subref{fig:graphic1:d} 变分方法
+    \subref{fig:graphic1:e} 本文
+    \subref{fig:graphic1:f} 带有噪音的fandisk
+    \subref{fig:graphic1:g} rtsc-1.5
+    \subref{fig:graphic1:h} Crest-lines
+    \subref{fig:graphic1:i} 变分方法
+    \subref{fig:graphic1:j} 本文
+    }
+    \label{fig:graphic1}
+\end{figure*}
+
+图3展示的是带有噪音的正十二面体和fandisk模型在不同算法下的结果。由于[17]提取的是和视角相关的轮廓线，那些带噪音的地方很容易会被当做轮廓线提取出来，所以结果看上去比较杂乱；[10]提取的是和高阶微分量相关的脊线谷线，带噪音对高阶的微分量影响较大，虽然他们有一个阈值可以调整去掉那些杂乱的线，但是当去掉那些杂乱的线的同时也会导致需要的脊线谷线消失一部分。[20]的输入就是受噪音影响显著的平均曲率，故他们的结果也不是很好。我们的方法基于稀疏优化，天然具有抗噪性，从结果也可以看出我们的结果质量很高。图4展示的是两个不同的机器零件在上述几种方法以及我们的方法下的特征线提取结果。
+
+我们也对三角面片数量较少、一般和较多三类模型应用我们的特征线提取方法。图5中的cow模型有5804个面,dinosaur模型有253224个面,lucy模型有262906个面,pierrot 模型有874740个面,dancechildren模型有1449162个面。从结果可以看出我们的方法很鲁棒，效果也很好。在求解时，我们的绝大部分时间是消耗在求解线性方程组上。由于我们的算法2需要迭代运行算法1，而算法1又要迭代求解，每次迭代求解需要求解一个规模和面数量一致的线性方程组，因此在没有加速的情况下会比较耗时。
+
+我们尝试对于不同的输入去提取特征线。图6展示的是一个顶点带有RGB属性的圣诞老人模型以及RGB的输入得到的特征线结果。由于我们需要的是一个分片常数的输入，所以我们把顶点上的RGB变换到每个三角形上的分片常数.对于三角形$\tau$上的值，如下计算：$\tau_R=\frac{1}{3}\sum_{v\prec\tau}v_R$,$\tau_G=\frac{1}{3}\sum_{v\prec\tau}v_G$,$\tau_B=\frac{1}{3}\sum_{v\prec\tau}v_B$.从结果可以发现总是有两条特征线一起检测出来，这是因为上述的分片常数的简单计算带来的弊端。
+
+
+\begin{figure*}[!htpb]
+    \centering
+    \subfloat[]{
+        \label{fig:graphic1:a}
+        \includegraphics[width=0.20\textwidth]{fusee.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:b}
+        \includegraphics[width=0.20\textwidth]{fuseeRtsc.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:c}
+        \includegraphics[width=0.20\textwidth]{fuseeCrest.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:d}
+        \includegraphics[width=0.20\textwidth]{fuseeVariation.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:e}
+        \includegraphics[width=0.20\textwidth]{fuseeOur.png}
+    }\\[0pt]
+    \subfloat[]{
+        \label{fig:graphic1:f}
+        \includegraphics[width=0.20\textwidth]{rocker-arm.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:g}
+        \includegraphics[width=0.20\textwidth]{rocker-armRtsc.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:h}
+        \includegraphics[width=0.20\textwidth]{rocker-armCrest.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:i}
+        \includegraphics[width=0.20\textwidth]{rocker-armVariation.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:j}
+        \includegraphics[width=0.20\textwidth]{rocker-armOur.png}
+    }
+    \caption[mesh]
+    {
+    \subref{fig:graphic1:a} 原始fusee模型
+    \subref{fig:graphic1:b} rtsc-1.5
+    \subref{fig:graphic1:c} Crest-lines
+    \subref{fig:graphic1:d} 变分方法
+    \subref{fig:graphic1:e} 本文
+    \subref{fig:graphic1:f} 原始rocker-arm模型
+    \subref{fig:graphic1:g} rtsc-1.5
+    \subref{fig:graphic1:h} Crest-lines
+    \subref{fig:graphic1:i} 变分方法
+    \subref{fig:graphic1:j} 本文
+    }
+    \label{fig:graphic1}
+\end{figure*}
+
+\subsection{性能以及参数说明}
+为了更好的说明本文算法的性能，我们测试了多个不同种类、规模的网格模型。表1展示了测试的网格信息、算法参数和计算时间。我们的测试是在主内存8GB，处理器为2.6GHz Intel Core i7 5600U的计算机上进行的。
+\setlength{\tabcolsep}{12pt}
+\begin{table}[h!]
+  \centering
+  \caption{算法在不同模型上的参数选择以及性能.其中AT表示一次循环平均使用的时间(对于$K$),单位是秒.}
+  \label{tab:table1}
+  \begin{tabular}{|c |c |c |c |c |c |c |c |c |c |}
+    \hline
+    模型 & $V$ & $F$ & $\lambda$ &  $\beta_0$  & $\beta_{max}$ & $\kappa$ & $K$ &$\varepsilon$ & $AT$\\
+    \hline
+    图1.b & 87494 & 174996 & 0.1 &  0.1  & 1000 & 1.4 & 1 & 0.2 & 171.20\\
+    图1.c & 87494 & 174996 & 0.2 &  0.1  & 2000 & 1.4 & 1 & 0.2 & 256.73\\
+    图1.d & 87494 & 174996 & 0.1 &  0.1  & 1000 & 1.4 & 10 & 0.2 & 171.20\\
+    图1.e & 87494 & 174996 & 0.2 &  0.1  & 2000 & 1.4 & 10 & 0.2 & 256.73\\
+    图2.b & 570870 & 1141868 & 0.1 &  0.1  & 1000 & 1.4 & 10 & 0.2 & 958.81\\
+    图2.e & 570870 & 1141868 & 0.1 &  0.1  & 1000 & 1.4 & 10 & 0.65 & 958.81\\
+    图3.e & 30722 & 61440 & 0.1 &  0.1  & 1000 & 1.4 & 1 & 0.2 & 28.06\\
+    图3.j & 48318 & 96632 & 0.1 &  0.2  & 1000 & 1.4 & 1 & 0.2 & 59.14\\
+    图4.e & 62088 & 124244 & 0.1 &  0.1  & 1000 & 1.4 & 10 & 0.2 & 75.50\\
+    图4.j & 31272 & 62544 & 0.1 &  0.1  & 1000 & 1.4 & 10 & 0.2 & 34.15\\
+    图5.f & 2903 & 5804 & 0.1 &  0.1  & 1000 & 1.4 & 10 & 0.2 & 2.98\\
+    图5.g & 126614 & 253224 & 0.1 &  0.1  & 1000 & 1.4 & 10 & 0.2 & 235.52\\
+    图5.h & 131455 & 262906 & 0.1 &  0.1  & 1000 & 1.4 & 10 & 0.2 & 228.29\\
+    图5.i & 437372 & 874740 & 0.1 &  0.1  & 1000 & 1.4 & 10 & 0.2 & 779.02\\
+    图5.j & 724678 & 1449380 & 0.07 &  0.1  & 700 & 1.4 & 10 & 0.05 & 1123.36\\
+    \hline
+  \end{tabular}
+\end{table}
+
+从表1中我们可以看到对于最简单的5804个面的cow模型每次循环使用的时间是2.98秒,最复杂的1449380个面的dancing\;children模型每次循环的时间长达1123.36秒。这是由于每次循环里面的迭代次数太多，矩阵规模太大，我们又是使用迭代方法去求解线性方程组的。本文的算法参数较多，但是选择较简单。控制结果稀疏度的$\lambda$ 基本确定在0.1附近，需要减少结果的特征线数量可略微增加$\lambda$;反之，略微降低。罚因子初始值$\beta_0$设为0.1,上限设为10000$\lambda$。增长因子$\kappa$ 取1.4；提取特征线的阈值$\varepsilon$取0.2，若需要增加结果的特征线数量可略微降低$\varepsilon$；反之，略微增加。对于简单模型，$K$取1复杂模型，$K$取10即可.
+
+\begin{figure*}[!htpb]
+    \centering
+    \subfloat[]{
+        \label{fig:graphic1:a}
+        \includegraphics[width=0.15\textwidth]{cow.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:b}
+        \includegraphics[width=0.25\textwidth]{dinosaur0.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:c}
+        \includegraphics[width=0.15\textwidth]{lucys1.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:d}
+        \includegraphics[width=0.20\textwidth]{pierrot0.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:e}
+        \includegraphics[width=0.2\textwidth]{children0.png}
+    }\\[0pt]
+    \subfloat[]{
+        \label{fig:graphic1:f}
+        \includegraphics[width=0.15\textwidth]{cow1.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:g}
+        \includegraphics[width=0.25\textwidth]{dinosaur1.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:h}
+        \includegraphics[width=0.15\textwidth]{lucys.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:i}
+        \includegraphics[width=0.20\textwidth]{pierrot1.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:e}
+        \includegraphics[width=0.2\textwidth]{123.png}
+    }
+    \caption[mesh]
+    {
+    %\subref{fig:graphic1:a} 原始cow模型;
+    %\subref{fig:graphic1:b} 原始dinosaur模型;
+    %\subref{fig:graphic1:c} 原始lucy模型;
+    %\subref{fig:graphic1:d} 原始pierrot模型;
+    %\subref{fig:graphic1:e} 原始dance children模型;
+    %\subref{fig:graphic1:f} cow特征线结果;
+    %\subref{fig:graphic1:g} dinosaur特征线结果;
+    %\subref{fig:graphic1:h} lucy特征线结果;
+    %\subref{fig:graphic1:i} pierrot特征线结果;
+    %\subref{fig:graphic1:j} dance children特征线结果。
+    (a)-(e):原始cow,dinosaur,lucy,pierrot,dancing\;children模型 ; (f)-(j):本文
+    }
+    \label{fig:graphic1}
+\end{figure*}
+
+\section{结语}
+本文提出了一种基于$L_0$优化和分片常数空间的特征线提取算法。由于$L_0$优化问题是NP难问题，我们使用[22]中的方法去近似求解。为了进一步提高结果质量，提出了一种提升结果质量的迭代策略。实验结果表明本文的算法是稳定的，得到的结果是高质量的。
+
+在与[10],[17]和[19]等基于传统微分高阶导数信息的方法进行比较时，可以发现本文的算法对于在带噪音网格上提取特征线有更好的结果，这是因为稀疏优化本身具有抗噪性。由于算法的迭代次数较多，且每次迭代的线性方程组规模和网格的三角面数量一致，因此在没有加速的情况下计算时间较长。又因为我们提取的特征线是由原始网格的特征边组成的，所以找寻特征线位置这一工作比[10],[17]和[19]简洁，但是结果质量受原始网格的影响较明显。
+
+我们今后的工作重点是改善本文的模型以及求解算法，进一步提高特征线提取结果的质量。具体研究以下几个方面：1)优化模型的改变，将特征线提取这一步骤添加到模型中，避免通过判断法向差异来提取特征线;2)研究求解$L_0$问题的其他算法，寻找更加高效，适合我们模型的求解方法;3)结合前人找寻特征线位置的方法,使特征线的组成不局限于原始三角网格的边;4)尝试构造衡量面与面之间的平整程度的算子。
+\begin{figure*}[!htpb]
+    \centering
+    \subfloat[]{
+        \label{fig:graphic1:a}
+        \includegraphics[width=0.25\textwidth]{santa.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:b}
+        \includegraphics[width=0.25\textwidth]{santaOur.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:c}
+        \includegraphics[width=0.25\textwidth]{santa1.png}
+    }
+    \subfloat[]{
+        \label{fig:graphic1:d}
+        \includegraphics[width=0.25\textwidth]{santaOur1.png}
+    }
+    \caption[mesh]
+    {
+    基于RGB的特征线提取
+    }
+    \label{fig:graphic1}
+\end{figure*}
+
+
+
+\begin{thebibliography}{}
+\bibitem{}
+    I.R. Porteous,
+    Geometric Differentiation for the Intelligence of Curves and Surfaces,
+    Cambridge University Press, 2nd ed., 2001.
+
+\bibitem{}
+    D. Eberly,
+    Ridges in Image and Data Analysis,
+    Kluwer Academic Publishers, 1996.
+
+\bibitem{}
+    G.G. Gordon,
+    Face recognition based on depth maps and surface curvature,
+    Geometric Method in Computer Vision, Proc. SPIE Vol. 1570, 234–247, 1991.
+
+\bibitem{}
+    M. Hosaka,
+    Modeling of Curves and Surfaces in CAD/CAM,
+    Springer-Verlag Press, 1992.
+
+\bibitem{}
+    A.G. Belyaev, Y. Ohtake and K. Abe,
+    Detection of ridges and ravines on range images and triangular meshes,
+    Vision Geometry IX, Proc. SPIE Vol. 4117, 146–154, 2000.
+
+\bibitem{}
+    K. Hildebrandt, K. Polthier and M. Wardetzky,
+    Smooth feature lines on surface meshes,
+    SGP’05: Proceedings of the third Eurographics symposium on Geometry processing, 85–90, 2005.
+
+\bibitem{}
+    Y. Ohtake, A. Belyaev and H.P. Seidel,
+    Ridge-valley lines on meshes via implicit surface fitting,
+    SIGGRAPH ’04: ACM SIGGRAPH 2004 Papers, 609–612, 2004.
+
+\bibitem{}
+    Y. Ohtake, A. Belyaev and M. Alexa,
+    Sparse low-degree implicit surfaces with applications to high quality rendering, feature extraction, and smoothing,
+    Proceedings of the third Eurographics symposium on Geometry processing, 149–158, 2005.
+
+\bibitem{}
+    S.K. Kim and C.H. Kim,
+    Finding ridges and valleys in a discrete surface using a modified mls approximation,
+    Comput.-Aided Des., 38:2 (2006), 173–180.
+
+\bibitem{}
+    S. Yoshizawa, A. Belyaev and H.P. Seidel,
+    Fast and robust detection of crest lines on meshes,
+    SPM ’05: Proceedings of the 2005 ACM symposium on Solid and physical modeling, 227–232,ACM, 2005.
+
+\bibitem{}
+    S. Yoshizawa, A. Belyaev, H. Yokota and H.P. Seidel,
+    Fast and faithful geometric algorithm for detecting crest lines on meshes,
+    PG ’07: Proceedings of the 15th Pacific Conference on Computer Graphics and Applications, 231–237, 2007.
+
+\bibitem{}
+    S. Yoshizawa, A. Belyaev, H. Yokota and H.P. Seidel,
+    Fast, robust, and faithful methods for detecting crest lines on meshes,
+    Comput. Aided Geom. Design, 18:8 (2008), 545–560.
+
+\bibitem{}
+    B. Gooch and A.A. Gooch,
+    Non-Photorealistic Rendering,
+    A K Peters Press, 2001.
+
+\bibitem{}
+    T. Strothotte and S. Schlechtweg,
+    Non-Photorealistic Computer Graphics: Modeling, Rendering, and Animation,
+    Morgan Kaufmann, 2002.
+
+\bibitem{}
+    L. Markosian, M.A. Kowalski, D. Goldstein, S.J. Trychin, J.F. Hughes and L.D.
+    Bourdev, Realtime nonphotorealistic rendering,
+    SIGGRAPH ’97: ACM SIGGRAPH 1997 papers, 415–420,1997.
+
+\bibitem{}
+     A. Hertzmann and D. Zorin,
+     Illustrating smooth surfaces,
+     SIGGRAPH ’00: ACM SIGGRAPH 2000 papers, 517–526, 2000.
+
+\bibitem{}
+    D. DeCarlo, A. Finkelstein, S. Rusinkiewicz and A. Santella,
+    Suggestive contours for conveying shape,
+    SIGGRAPH ’03: ACM SIGGRAPH 2003 Papers, 848–855, 2003.
+
+\bibitem{}
+    Liu S L，Zhou Ｒ Ｒ，Zhang L Y．
+    Feature line extraction from triangular mesh model［J］．
+    Journal of Computer-Aided Design ＆ Computer Graphics,2003,15(4):445-448 (in Chinese)
+    (刘胜兰，周儒荣，张丽艳． 三角网格模型的特征线提取［J］．计算机辅助设计与图形学学报， 2003， 15( 4) : 445-448)
+
+\bibitem{}
+    Miao Y W，Wang H J，Shou H H．
+    A fast extraction algorithm for feature lines［J］．
+    Journal of ZheJiang Univesity of Techonology,2013,41(5):530-533 (in Chinese)
+    (缪永伟，王洪军，寿华好.一种环形特征线的快速提取方法[J].浙江工业大学学报，2013,41(5):530-533)
+
+\bibitem{}
+    Tong W, Tai X.
+    A VARIATIONAL APPROACH FOR DETECTING FEATURE LINES ON MESHES[J].
+    Journal of Computational Mathematics, 2016, 34(1).
+
+\bibitem{}
+    M. Elad,
+    Sparse and Redundant Representations: From Theory to Applications in Signal and Image Processing,
+    New York, NY, USA: Springer, 2000.
+
+\bibitem{}
+    L. Xu, C. Lu, Y. Xu, and J. Jia,
+    Image smoothing via $l_0$ gradient minimization,
+    ACM Trans. Graph., 30(6), 2011.
+
+\bibitem{}
+    L. He, S. Schaefer,
+    Mesh denoising via $l_0$ minimization,
+    ACM Trans. Graph., 32 (4), 2013.
+
+\bibitem{}
+    Zhang H, Wu C, Zhang J, et al,
+    Variational mesh denoising using total variation and piecewise constant function space[J].
+    IEEE transactions on visualization and computer graphics, 2015, 21(7): 873-886.
+
+\end{thebibliography}
+
+
+\end{document}
